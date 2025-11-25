@@ -1,0 +1,24 @@
+
+make_data:
+  num_channels: 16
+  batch_size: 32 # run LFADS batch
+  fs: 50000
+  bin_size: 0.005  # seconds per bin
+  sample_len: 12  # sample len in s
+  overlap: 2 # 2 second overlap when binning, included in sample_len
+  split_frac: 0.75 # train - test split
+  DEBUG: False
+  recording_duration: 900 # seconds (15 minutes)
+make_toy_data:
+  num_channels: 16
+  bin_size: 0.005  # seconds per bin
+  sample_sizes: [100, 120] # sample sizes for toy data
+  recording_duration: 6.0 # Total time (e.g., seconds)
+  max_rate: 100.0 # Maximum rate Hz
+  min_rate: 2.0 # Minimum rate Hz
+  frequency: 1 # Frequency (period of 20 units)
+  DEBUG: False
+  split_frac: 0.75 # train - test split
+  batch_size: 3 # run LFADS batch
+  run_lfads: True # run LFADS
+  stitch_data: True # stitch data after running LFADS

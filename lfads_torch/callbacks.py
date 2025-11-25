@@ -126,25 +126,33 @@ class RasterPlot(pl.Callback):
             else:
                 plot_arrays = [recon_data, truth, means, inputs]
                 height_ratios = [3, 3, 3, 1]
+            # Determine actual batch size to avoid index errors
+            batch_size = recon_data.shape[0]
+            n_samples_to_plot = min(self.n_samples, batch_size)
             # Create subplots
             fig, axes = plt.subplots(
                 len(plot_arrays),
-                self.n_samples,
+                n_samples_to_plot,
                 sharex=True,
                 sharey="row",
-                figsize=(3 * self.n_samples, 10),
+                figsize=(3 * n_samples_to_plot, 10),
                 gridspec_kw={"height_ratios": height_ratios},
             )
+            # Handle case where n_samples_to_plot is 1 (axes might not be 2D)
+            if n_samples_to_plot == 1:
+                axes = axes.reshape(-1, 1)
             for i, ax_col in enumerate(axes.T):
+                # Ensure we don't exceed batch size
+                sample_idx = min(i, batch_size - 1)
                 for j, (ax, array) in enumerate(zip(ax_col, plot_arrays)):
                     if j < len(plot_arrays) - 1:
-                        ax.imshow(array[i].T, interpolation="none", aspect="auto")
+                        ax.imshow(array[sample_idx].T, interpolation="none", aspect="auto")
                         ax.vlines(steps_encod, 0, neur_recon, color="orange")
                         ax.hlines(neur_encod, 0, steps_recon, color="orange")
                         ax.set_xlim(0, steps_recon)
                         ax.set_ylim(0, neur_recon)
                     else:
-                        ax.plot(array[i])
+                        ax.plot(array[sample_idx])
             plt.tight_layout()
             # Log the figure
             log_figure(

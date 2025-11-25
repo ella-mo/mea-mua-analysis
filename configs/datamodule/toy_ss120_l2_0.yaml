@@ -1,0 +1,3 @@
+_target_: lfads_torch.datamodules.BasicDataModule
+datafile_pattern: ${relpath:datasets/toy_ss120_l2_0.h5}
+batch_size: 3
