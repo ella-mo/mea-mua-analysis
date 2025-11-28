@@ -26,7 +26,7 @@ if __name__ == "__main__":
     # Overwrite the directory if necessary
     if RUN_DIR.exists() and OVERWRITE:
         shutil.rmtree(RUN_DIR)
-    RUN_DIR.mkdir(parents=True)
+    RUN_DIR.mkdir(parents=True, exist_ok=True)
     # Copy this script into the run directory
     shutil.copyfile(__file__, RUN_DIR / Path(__file__).name)
     # Switch to the `RUN_DIR` and train the model

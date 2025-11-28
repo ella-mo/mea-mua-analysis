@@ -23,6 +23,7 @@ except ImportError:
 def extract_threshold_waveforms(signal, threshold, fs):
     """
     Extracts spike-aligned waveforms and timing information.
+    Requires the voltage trace to cross 0 before the next crossing time is detected.
 
     Parameters
     ----------
@@ -43,9 +44,31 @@ def extract_threshold_waveforms(signal, threshold, fs):
     num_samples = len(window)
 
     # Detect negative threshold crossings (downward crossings from above -threshold to below -threshold)
-    neg_idx = np.where(np.diff(np.concatenate([[0], signal < -threshold])) == 1)[0]
-
-    crossings = neg_idx
+    neg_threshold_crossings = np.where(np.diff(np.concatenate([[0], signal < -threshold])) == 1)[0]
+    
+    # Detect zero crossings (signal crosses from negative to positive or positive to negative)
+    # Find where consecutive samples have opposite signs (product is negative)
+    zero_crossings = np.where(signal[:-1] * signal[1:] < 0)[0]
+    
+    # Filter threshold crossings: only keep those where a zero crossing occurred since the last threshold crossing
+    valid_crossings = []
+    last_threshold_idx = -1
+    
+    for thresh_idx in neg_threshold_crossings:
+        # Check if there's a zero crossing between the last threshold crossing and this one
+        if last_threshold_idx == -1:
+            # First crossing is always valid
+            valid_crossings.append(thresh_idx)
+            last_threshold_idx = thresh_idx
+        else:
+            # Check if there's a zero crossing after the last threshold crossing and before this one
+            zero_after_last = zero_crossings[(zero_crossings > last_threshold_idx) & (zero_crossings < thresh_idx)]
+            if len(zero_after_last) > 0:
+                # Found a zero crossing, so this threshold crossing is valid
+                valid_crossings.append(thresh_idx)
+                last_threshold_idx = thresh_idx
+    
+    crossings = np.array(valid_crossings)
     num_crossings = len(crossings)
 
     for i, t in enumerate(crossings):
@@ -106,7 +129,6 @@ if __name__ == '__main__':
 
     # process args
     files = pd.read_csv(args.bin_files_csv)['path'].tolist()
-    lfads_datasets_path = f'{args.lfads_dir}/datasets'
 
     with open(args.config_file, 'r') as f:
         config = yaml.safe_load(f)
@@ -133,6 +155,8 @@ if __name__ == '__main__':
         train_indices = f"{output_dir}/other_files/{dataset_str}/train_indices_{dataset_str}.npy"
         valid_indices = f"{output_dir}/other_files/{dataset_str}/valid_indices_{dataset_str}.npy"
         mat_file = f"{output_dir}/other_files/{dataset_str}/{dataset_str}_raw_data.mat"
+                # Create datasets directory if it doesn't exist
+        data_file = f'{args.lfads_dir}/datasets/{dataset_str}.h5'
 
         # Load bin file
         data = np.memmap(file, dtype='float32', mode='r')
@@ -160,10 +184,6 @@ if __name__ == '__main__':
 
         print(f"Train shape: {train_data.shape}, Valid shape: {valid_data.shape}")
         print(f"Saved index lists for reconstruction.")
-
-        # Create datasets directory if it doesn't exist
-        os.makedirs(lfads_datasets_path, exist_ok=True)
-        data_file = f'{lfads_datasets_path}/{filename}.h5'
         
         with h5py.File(data_file, "w") as f:
             f.create_dataset("train_encod_data", data=train_data)
@@ -174,6 +194,7 @@ if __name__ == '__main__':
         # Get batch_size from config or use default
         batch_size = int(config['make_data'].get('batch_size', 32))
         
-        create_datamodule_config(args.lfads_dir, batch_size, filename)
-        create_model_config(args.lfads_dir, filename, train_data)
+        create_datamodule_config(args.lfads_dir, batch_size, dataset_str)
+        create_model_config(args.lfads_dir, dataset_str, train_data)
+
     

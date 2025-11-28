@@ -17,7 +17,7 @@ make_toy_data:
   max_rate: 100.0 # Maximum rate Hz
   min_rate: 2.0 # Minimum rate Hz
   frequency: 1 # Frequency (period of 20 units)
-  DEBUG: False
+  DEBUG: True
   split_frac: 0.75 # train - test split
   batch_size: 3 # run LFADS batch
   run_lfads: True # run LFADS

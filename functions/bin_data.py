@@ -1,7 +1,9 @@
 import numpy as np
 
 def readable_float(float_string):
-    return str(float_string).replace('.','_')
+    # Convert to float first to ensure decimal point is always present
+    # This handles both integers (90 -> 90.0) and floats (0.02 -> 0.02)
+    return str(float(float_string)).replace('.','_')
 
 def validate_bin_data(binned_trials, spike_times_per_channel, num_channels, recording_duration, sample_len, bin_size, overlap):
     """

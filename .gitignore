@@ -139,3 +139,5 @@ dmypy.json
 *.csv
 *.mat
 *.npy
+functions/test_spike_detection.py
+*.png
