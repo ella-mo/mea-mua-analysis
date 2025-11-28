@@ -12,6 +12,9 @@ try:
     # Try relative imports first (when imported as module)
     from .make_configs import create_datamodule_config, create_model_config
     from .bin_data import bin_make_train_val, readable_float
+    from .process_data import extract_threshold_waveforms, calculate_threshold
+    from .making_names import make_dataset_str
+
 except ImportError:
     # If relative imports fail, add parent directory to path and use absolute imports
     sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -19,105 +22,8 @@ except ImportError:
     from functions.bin_data import bin_make_train_val, readable_float
     _project_root = Path(__file__).parent.parent.parent
     from data_functions import stitch_data
-
-def extract_threshold_waveforms(signal, threshold, fs):
-    """
-    Extracts spike-aligned waveforms and timing information.
-    Requires the voltage trace to cross 0 before the next crossing time is detected.
-
-    Parameters
-    ----------
-    signal : 1D array
-        Voltage trace.
-    threshold : float
-        Threshold value (positive).
-    fs : float
-        Sampling frequency in Hz (e.g., 12500).
-
-    Returns
-    -------
-    crossing_times : (num_crossings,) array
-        Crossing times in seconds.
-    """
-    samples = int(round(0.001 * fs))       # 1 ms before and after
-    window = np.arange(-samples, samples + 1)
-    num_samples = len(window)
-
-    # Detect negative threshold crossings (downward crossings from above -threshold to below -threshold)
-    neg_threshold_crossings = np.where(np.diff(np.concatenate([[0], signal < -threshold])) == 1)[0]
-    
-    # Detect zero crossings (signal crosses from negative to positive or positive to negative)
-    # Find where consecutive samples have opposite signs (product is negative)
-    zero_crossings = np.where(signal[:-1] * signal[1:] < 0)[0]
-    
-    # Filter threshold crossings: only keep those where a zero crossing occurred since the last threshold crossing
-    valid_crossings = []
-    last_threshold_idx = -1
-    
-    for thresh_idx in neg_threshold_crossings:
-        # Check if there's a zero crossing between the last threshold crossing and this one
-        if last_threshold_idx == -1:
-            # First crossing is always valid
-            valid_crossings.append(thresh_idx)
-            last_threshold_idx = thresh_idx
-        else:
-            # Check if there's a zero crossing after the last threshold crossing and before this one
-            zero_after_last = zero_crossings[(zero_crossings > last_threshold_idx) & (zero_crossings < thresh_idx)]
-            if len(zero_after_last) > 0:
-                # Found a zero crossing, so this threshold crossing is valid
-                valid_crossings.append(thresh_idx)
-                last_threshold_idx = thresh_idx
-    
-    crossings = np.array(valid_crossings)
-    num_crossings = len(crossings)
-
-    for i, t in enumerate(crossings):
-        sample_idx = t + window
-        valid = (sample_idx >= 0) & (sample_idx < len(signal))
-
-    crossing_times = crossings / fs
-
-    return crossing_times
-
-
-def calculate_threshold(curr_channel_data):
-    median_val = np.median(curr_channel_data)
-    absolute_deviations = np.abs(curr_channel_data - median_val)
-    mad = np.median(absolute_deviations)
-    stdev = mad / 0.6745
-    threshold = 4 * stdev
-
-    return threshold
-
-
-def make_dataset_str(bin_file, bin_size, sample_len, overlap):
-    """Extract day, recording number, and well from bin file path and name"""
-    bin_path = Path(bin_file)
-    bin_name = bin_path.name
-    
-    # Extract well from bin filename (e.g., "20250509_NIN-B1_D80(001)_C5.bin" -> "C5")
-    well_match = re.search(r'_([A-D][1-8])\.bin$', bin_name)
-    if not well_match:
-        raise ValueError(f"Could not extract well from bin filename: {bin_name}")
-    well = well_match.group(1)
-    
-    # Extract day from grandparent directory (e.g., "20250509_NIN-B1_D80" or "20250410_NIN_B1_D51" -> "80" or "51")
-    grandparent_dir = bin_path.parent.parent.name
-    day_match = re.search(r'B1_D(\d+)', grandparent_dir)
-    if not day_match:
-        raise ValueError(f"Could not extract day from grandparent directory: {grandparent_dir}")
-    day = day_match.group(1)
-    
-    # Extract recording number from bin filename (e.g., "20250509_NIN-B1_D80(001)_C5.bin" -> "001")
-    rec_match = re.search(r'\((\d+)\)', bin_name)
-    if not rec_match:
-        raise ValueError(f"Could not extract recording number from bin filename: {bin_name}")
-    recording = rec_match.group(1)
-    
-    dataset_str = f'd{day}_r{recording}_w{well}_b{readable_float(bin_size)}_sl{readable_float(sample_len)}_o{readable_float(overlap)}'
-
-    return dataset_str
-
+    from process_data import extract_threshold_waveforms, calculate_threshold
+    from making_names import make_dataset_str
 
 if __name__ == '__main__':
     import argparse
@@ -196,5 +102,3 @@ if __name__ == '__main__':
         
         create_datamodule_config(args.lfads_dir, batch_size, dataset_str)
         create_model_config(args.lfads_dir, dataset_str, train_data)
-
-    

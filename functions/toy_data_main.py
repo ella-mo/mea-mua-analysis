@@ -14,6 +14,8 @@ try:
     # Try relative imports first (when imported as module)
     from .make_configs import create_datamodule_config, create_model_config
     from .bin_data import bin_make_train_val, readable_float
+    from .process_data import inhomogeneous_poisson_sinusoidal
+    from .making_names import make_dataset_str
 except ImportError:
     # If relative imports fail, add parent directory to path and use absolute imports
     sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -23,68 +25,9 @@ except ImportError:
     if str(_project_root) not in sys.path:
         sys.path.insert(0, str(_project_root))
     from data_functions import stitch_data
-
-def get_latest_lfads_output(runs_root: Path) -> Optional[Path]:
-    """
-    Returns the most recent LFADS output .h5 file within runs_root (runs/dataset_str/RUN_TAG).
-    """
-    if not runs_root.exists():
-        return None
-    run_dirs = [d for d in runs_root.iterdir() if d.is_dir()]
-    if not run_dirs:
-        return None
-    latest_run = max(run_dirs, key=lambda p: p.stat().st_mtime)
-    rate_files = sorted(latest_run.glob("lfads_output*.h5"))
-    if not rate_files:
-        return None
-    return rate_files[-1]
-
-def inhomogeneous_poisson_sinusoidal(
-    duration: float,
-    max_rate: float,
-    min_rate: float,
-    frequency: float,
-    phase: float = 0.0,
-    rng: Optional[np.random.Generator] = None,
-) -> np.ndarray:
-    """
-    Simulate an inhomogeneous Poisson process with sinusoidal rate via thinning.
-
-    Args:
-        duration: Total simulation time (seconds).
-        max_rate: Maximum rate (Hz). Defines the rejection envelope.
-        min_rate: Minimum rate (Hz). Must satisfy 0 <= min_rate <= max_rate.
-        frequency: Sinusoid frequency (Hz).
-        phase: Optional phase offset (radians).
-        rng: Optional numpy Generator for reproducibility.
-
-    Returns:
-        np.ndarray of event times (seconds) sorted in ascending order.
-    """
-    if max_rate <= 0:
-        raise ValueError("max_rate must be positive.")
-    if min_rate < 0 or min_rate > max_rate:
-        raise ValueError("min_rate must be in [0, max_rate].")
-    if frequency <= 0:
-        raise ValueError("frequency must be positive.")
-    if rng is None:
-        rng = np.random.default_rng()
-
-    def lambda_t(t: float) -> float:
-        # Sinusoid scaled to [min_rate, max_rate]
-        return min_rate + (max_rate - min_rate) * 0.5 * (1 + math.sin(2 * math.pi * frequency * t + phase))
-
-    lam_max = max_rate
-    t = 0.0
-    events = []
-    while t < duration:
-        t += rng.exponential(1.0 / lam_max)
-        if t >= duration:
-            break
-        if rng.random() < lambda_t(t) / lam_max:
-            events.append(t)
-    return np.array(events, dtype=float)
-
+    from process_data import inhomogeneous_poisson_sinusoidal
+    from making_names import make_dataset_str
+    
 
 if __name__ == '__main__':
     lfads_dir = Path(__file__).resolve().parent.parent
