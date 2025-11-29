@@ -14,7 +14,6 @@ try:
     from .make_configs import create_datamodule_config, create_model_config
     from .bin_data import bin_make_train_val, readable_float
     from .process_data import lambda_t, inhomogeneous_poisson_sinusoidal
-    from .making_names import make_dataset_str
 except ImportError:
     # If relative imports fail, add parent directory to path and use absolute imports
     sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -25,7 +24,6 @@ except ImportError:
         sys.path.insert(0, str(_project_root))
     from data_functions import stitch_data
     from process_data import lambda_t, inhomogeneous_poisson_sinusoidal
-    from making_names import make_dataset_str
     
 
 if __name__ == '__main__':
@@ -43,8 +41,6 @@ if __name__ == '__main__':
 
     out_path = args.lfads_dir
     original_cwd = Path.cwd()
-    files_dir = lfads_dir / "files"
-    files_dir.mkdir(parents=True, exist_ok=True)
 
     n_channels = int(config['make_toy_data']['num_channels'])
     DEBUG = config['make_toy_data']['DEBUG']
@@ -60,6 +56,8 @@ if __name__ == '__main__':
     end_sin_time = float(config['make_toy_data']['end_sin_time'])
 
     rate_str = f"toy_max{readable_float(max_rate)}_min{readable_float(min_rate)}_per{readable_float(period)}"
+    files_dir = lfads_dir / "files" / rate_str
+    files_dir.mkdir(parents=True, exist_ok=True)
     
     # Simulate the process
     spike_times_per_channel = []
@@ -98,108 +96,39 @@ if __name__ == '__main__':
 
     for i, (sample_size, overlap) in enumerate(zip(sample_sizes, overlaps)):
         #Prep output paths
-        train_indices = f"{lfads_dir}/files/train_indices_{rate_str}.npy"
-        valid_indices = f"{lfads_dir}/files/valid_indices_{rate_str}.npy"
-        data_file = f'{out_path}/datasets/{rate_str}.h5'
-        runs_dir = Path(out_path) / "runs" / rate_str
+        rate_str_ss = f'{rate_str}_ss{readable_float(sample_size)}'
+        train_indices = f"{lfads_dir}/files/train_indices_{rate_str_ss}.npy"
+        valid_indices = f"{lfads_dir}/files/valid_indices_{rate_str_ss}.npy"
+        data_file = f'{out_path}/datasets/{rate_str_ss}.h5'
 
-        if config['make_toy_data']['run_lfads']:
-            print(f'Prepping files for {sample_size} sample size ({overlap} overlap)')
-            print('\n')
+        print(f'Prepping files for {sample_size} sample size ({overlap} overlap)')
+        print('\n')
 
-            # sample_size is in bins, convert to seconds for sample_len
-            sample_len = sample_size * bin_size
-            
-            train_data, valid_data, train_idx, valid_idx = bin_make_train_val(
-                spike_times_per_channel, 
-                n_channels, 
-                recording_duration, 
-                sample_len, 
-                bin_size, 
-                overlap, 
-                split_frac, 
-                DEBUG
-            )
+        # sample_size is in bins, convert to seconds for sample_len
+        sample_len = sample_size * bin_size
+        train_data, valid_data, train_idx, valid_idx = bin_make_train_val(
+            spike_times_per_channel, 
+            n_channels, 
+            recording_duration, 
+            sample_len, 
+            bin_size, 
+            overlap, 
+            split_frac, 
+            DEBUG
+        )
 
-            # Save index lists for later reconstruction
-            np.save(train_indices, train_idx)
-            np.save(valid_indices, valid_idx)
+        # Save index lists for later reconstruction
+        np.save(train_indices, train_idx)
+        np.save(valid_indices, valid_idx)
 
-            print(f"Saved index lists for reconstruction.")
+        print(f"Saved index lists for reconstruction.")
 
-            with h5py.File(data_file, "w") as f:
-                f.create_dataset("train_encod_data", data=train_data)
-                f.create_dataset("train_recon_data", data=train_data)
-                f.create_dataset("valid_encod_data", data=valid_data)
-                f.create_dataset("valid_recon_data", data=valid_data)
+        with h5py.File(data_file, "w") as f:
+            f.create_dataset("train_encod_data", data=train_data)
+            f.create_dataset("train_recon_data", data=train_data)
+            f.create_dataset("valid_encod_data", data=valid_data)
+            f.create_dataset("valid_recon_data", data=valid_data)
 
-            # # config files
-            create_datamodule_config(out_path, batch_size, rate_str)
-            create_model_config(out_path, rate_str, train_data)
-
-            sys.exit()
-
-            import subprocess
-            import sys
-
-            env_name = "lfads-torch" 
-            script_to_run = "scripts/run_test.py"
-
-            os.chdir(out_path)
-            print(f'Currently in {os.getcwd()}')
-            try:
-                # Construct the command to run the script within the specified Conda environment
-                command = [
-                    "conda",
-                    "run",
-                    "-n",
-                    env_name,
-                    "python",  # Use the Python interpreter from the lfads-torch Conda env
-                    script_to_run,
-                    "-d",
-                    dataset_str,
-                ]
-
-                # Execute the command using subprocess.run
-                # capture_output=True to capture stdout and stderr
-                # text=True to decode output as text
-                # check=True to raise an exception if the command returns a non-zero exit code
-                result = subprocess.run(command, capture_output=True, text=True, check=True)
-
-                print("Script output:")
-                print(result.stdout)
-                if result.stderr:
-                    print("Script errors:")
-                    print(result.stderr)
-
-            except subprocess.CalledProcessError as e:
-                print(f"Error running script in Conda environment: {e}")
-                print(f"Stdout: {e.stdout}")
-                print(f"Stderr: {e.stderr}")
-            except FileNotFoundError:
-                print("Error: 'conda' command not found. Ensure Conda is installed and in your PATH.")
-            finally:
-                os.chdir(original_cwd)
-
-
-        latest_rates_file = get_latest_lfads_output(runs_dir)
-        if config['make_toy_data']['stitch_data']:
-            if latest_rates_file is None:
-                if config['make_toy_data']['run_lfads']:
-                    raise FileNotFoundError(
-                        f"Could not locate LFADS output in '{runs_dir}'."
-                    )
-                else:
-                    raise FileNotFoundError(
-                        f"run_lfads is False but no prior LFADS output was found in '{runs_dir}'."
-                    )
-
-            stitch_data(
-                latest_rates_file,
-                "rates",
-                train_indices,
-                valid_indices,
-                bin_size,
-                overlap,
-                files_dir,
-            )
+        # # config files
+        create_datamodule_config(out_path, batch_size, rate_str_ss)
+        create_model_config(out_path, train_data, rate_str_ss)

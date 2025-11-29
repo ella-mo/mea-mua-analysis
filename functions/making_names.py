@@ -31,19 +31,3 @@ def make_dataset_str(bin_file, bin_size, sample_len, overlap):
     dataset_str = f'd{day}_r{recording}_w{well}_b{readable_float(bin_size)}_sl{readable_float(sample_len)}_o{readable_float(overlap)}'
 
     return dataset_str
-
-# TOY DATA
-def get_latest_lfads_output(runs_root: Path) -> Optional[Path]:
-    """
-    Returns the most recent LFADS output .h5 file within runs_root (runs/dataset_str/RUN_TAG).
-    """
-    if not runs_root.exists():
-        return None
-    run_dirs = [d for d in runs_root.iterdir() if d.is_dir()]
-    if not run_dirs:
-        return None
-    latest_run = max(run_dirs, key=lambda p: p.stat().st_mtime)
-    rate_files = sorted(latest_run.glob("lfads_output*.h5"))
-    if not rate_files:
-        return None
-    return rate_files[-1]

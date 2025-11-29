@@ -13,7 +13,7 @@ make_toy_data:
   num_channels: 16
   bin_size: 0.005  # seconds per bin
   sample_sizes: [100, 120] # sample sizes for toy data
-  recording_duration: 6.0 # Total time for the whole recording (e.g., seconds)
+  recording_duration: 30.0 # Total time for the whole recording (e.g., seconds)
   max_rate: 100.0 # Maximum rate Hz
   min_rate: 2.0 # Minimum rate Hz
   period: 1 # Period of the sinusoidal rate function (seconds)
@@ -22,5 +22,3 @@ make_toy_data:
   split_frac: 0.75 # train - test split
   batch_size: 3 # run LFADS batch
   DEBUG: True
-  run_lfads: True # run LFADS
-  stitch_data: True # stitch data after running LFADS

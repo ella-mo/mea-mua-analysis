@@ -16,7 +16,7 @@ def create_datamodule_config(out_path, batch_size, dataset_str):
     
     print(f'Created datamodule config file for {dataset_str}')
 
-def create_model_config(out_path, dataset_str, binned_trials):
+def create_model_config(out_path, binned_trials, dataset_str):
     model_config_dir = f'{out_path}/configs/model'
     template_path = f'{model_config_dir}/nlb_mc_maze.yaml'
 
