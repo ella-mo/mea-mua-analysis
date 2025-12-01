@@ -14,29 +14,27 @@ try:
     from .make_configs import create_datamodule_config, create_model_config
     from .bin_data import bin_make_train_val, readable_float
     from .process_data import lambda_t, inhomogeneous_poisson_sinusoidal
+    from .making_names import make_toy_dataset_strs
 except ImportError:
     # If relative imports fail, add parent directory to path and use absolute imports
     sys.path.insert(0, str(Path(__file__).parent.parent))
     from functions.make_configs import create_datamodule_config, create_model_config
     from functions.bin_data import bin_make_train_val, readable_float
-    _project_root = Path(__file__).parent.parent.parent
-    if str(_project_root) not in sys.path:
-        sys.path.insert(0, str(_project_root))
-    from data_functions import stitch_data
-    from process_data import lambda_t, inhomogeneous_poisson_sinusoidal
-    
+    from functions.process_data import lambda_t, inhomogeneous_poisson_sinusoidal
+    from functions.making_names import make_toy_dataset_strs
 
 if __name__ == '__main__':
+    # hardcoded
     lfads_dir = Path(__file__).resolve().parent.parent
-    config_file = lfads_dir / 'functions/config.yaml'
+    config_path = lfads_dir / 'functions/config.yaml'
 
     import argparse
     parser = argparse.ArgumentParser(description="Run LFADS on toy data")
     parser.add_argument("-l", "--lfads_dir", type=str, default=lfads_dir, help="full file path to lfads-torch directory")
-    parser.add_argument("-c", "--config_file", type=str, default=config_file, help="full file path to config file")
+    parser.add_argument("-c", "--config_path", type=str, default=config_path, help="full file path to config file")
     args = parser.parse_args()
 
-    with open(args.config_file, 'r') as f:
+    with open(args.config_path, 'r') as f:
         config = yaml.safe_load(f)
 
     out_path = args.lfads_dir
@@ -55,7 +53,7 @@ if __name__ == '__main__':
     start_sin_time = float(config['make_toy_data']['start_sin_time'])
     end_sin_time = float(config['make_toy_data']['end_sin_time'])
 
-    rate_str = f"toy_max{readable_float(max_rate)}_min{readable_float(min_rate)}_per{readable_float(period)}"
+    rate_str, rate_str_ss_lst = make_toy_datset_strs(args.config_path)
     files_dir = lfads_dir / "files" / rate_str
     files_dir.mkdir(parents=True, exist_ok=True)
     
@@ -94,9 +92,8 @@ if __name__ == '__main__':
     split_frac = float(config['make_toy_data']['split_frac'])
     batch_size = int(config['make_toy_data']['batch_size'])
 
-    for i, (sample_size, overlap) in enumerate(zip(sample_sizes, overlaps)):
+    for i, (sample_size, overlap, rate_str_ss) in enumerate(zip(sample_sizes, overlaps, rate_str_ss_lst)):
         #Prep output paths
-        rate_str_ss = f'{rate_str}_ss{readable_float(sample_size)}'
         train_indices = f"{lfads_dir}/files/train_indices_{rate_str_ss}.npy"
         valid_indices = f"{lfads_dir}/files/valid_indices_{rate_str_ss}.npy"
         data_file = f'{out_path}/datasets/{rate_str_ss}.h5'

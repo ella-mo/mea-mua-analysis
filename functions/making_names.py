@@ -1,7 +1,14 @@
 from pathlib import Path
 import re
 from typing import Optional
+import yaml
 
+try:
+    # Try relative imports first (when imported as module)
+    from .bin_data import readable_float
+except ImportError:
+    sys.path.insert(0, str(Path(__file__).parent.parent))
+    from functions.bin_data import readable_float
 
 # REAL DATA
 def make_dataset_str(bin_file, bin_size, sample_len, overlap):
@@ -31,3 +38,20 @@ def make_dataset_str(bin_file, bin_size, sample_len, overlap):
     dataset_str = f'd{day}_r{recording}_w{well}_b{readable_float(bin_size)}_sl{readable_float(sample_len)}_o{readable_float(overlap)}'
 
     return dataset_str
+
+# TOY DATA
+def make_toy_dataset_strs(config_path):
+    config_toy_str = 'make_toy_data'
+    with open(config_path, "r") as f:
+        config = yaml.safe_load(f)
+
+    sample_sizes = config[config_toy_str]["sample_sizes"]
+    max_rate = float(config[config_toy_str]["max_rate"])
+    min_rate = float(config[config_toy_str]["min_rate"])
+    period = float(config[config_toy_str]["period"])
+
+    rate_str = f"toy_max{readable_float(max_rate)}_min{readable_float(min_rate)}_per{readable_float(period)}"
+
+    rate_str_ss_lst = [f"{rate_str}_ss{readable_float(sample_size)}" for sample_size in sample_sizes]
+
+    return rate_str, rate_str_ss_lst

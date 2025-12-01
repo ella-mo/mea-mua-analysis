@@ -1,3 +1,6 @@
+# TODO
+figure out better way of getting dataset_str between shell scripts and python files
+
 # `lfads-torch`: A modular and extensible implementation of latent factor analysis via dynamical systems
 
 [![arXiv](https://img.shields.io/badge/arXiv-2309.01230-b31b1b.svg)](https://arxiv.org/abs/2309.01230) [![Gitter](https://img.shields.io/badge/chat-on%20gitter-brightgreen)](https://app.gitter.im/#/room/#lfads:gitter.im)

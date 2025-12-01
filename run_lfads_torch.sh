@@ -52,7 +52,7 @@ mapfile -t DATASETS < <(
   python - <<'PY'
 import pandas as pd
 from pathlib import Path
-from functions.main import make_dataset_str
+from functions.making_names import make_dataset_str
 import yaml
 with open("functions/config.yaml", "r") as f:
     config = yaml.safe_load(f)

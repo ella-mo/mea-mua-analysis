@@ -5,7 +5,7 @@
 #SBATCH -p gpu
 #SBATCH --gres=gpu:1
 #SBATCH --time=00:10:00
-#SBATCH --mem=25G
+#SBATCH --mem=10G
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=ella_mohanram@brown.edu
 
@@ -14,6 +14,7 @@
 # User paths (EDIT THESE)
 # ----------------------------
 LFADS_DIR=/oscar/data/slizarra/emohanra/finding_latent_rates_with_kilosort/lfads-torch
+CONFIG_PATH="$LFADS_DIR/functions/config.yaml"
 
 # ----------------------------
 # Setup
@@ -43,38 +44,25 @@ mkdir -p logs
 cd "$LFADS_DIR"
 
 # preprocess all sample sizes and build configs
-python -m functions.toy_data_main -l "$LFADS_DIR" -c functions/config.yaml
+python -m functions.toy_data_main -l "$LFADS_DIR" -c "$CONFIG_PATH"
 
 # grab the toy dataset IDs that toy_data_main just generated
-mapfile -t DATASETS < <(
-python - <<'PY'
-import yaml
+mapfile -t rate_str_ss_lst < <(python - <<'PY'
 from pathlib import Path
-from functions.bin_data import readable_float
+from functions.making_names import make_toy_dataset_strs
 
-lfads_dir = Path(".")
-config_path = lfads_dir / "functions" / "config.yaml"
+config_path = Path("$CONFIG_PATH")
+_, rate_str_ss_lst = make_toy_dataset_strs(config_path)
 
-with open(config_path, "r") as f:
-    config = yaml.safe_load(f)
-
-sample_sizes = config["make_toy_data"]["sample_sizes"]
-max_rate = float(config["make_toy_data"]["max_rate"])
-min_rate = float(config["make_toy_data"]["min_rate"])
-period = float(config["make_toy_data"]["period"])
-
-rate_str = f"toy_max{readable_float(max_rate)}_min{readable_float(min_rate)}_per{readable_float(period)}"
-
-for sample_size in sample_sizes:
-    rate_str_ss = f"{rate_str}_ss{readable_float(sample_size)}"
-    print(rate_str_ss)
+for s in rate_str_ss_lst:
+    print(s)
 PY
 )
 
 # launch LFADS for each toy dataset
-for dataset in "${DATASETS[@]}"; do
-  echo "Running LFADS for $dataset"
-  python -m scripts.run_test -d "$dataset"
+for rate_str_ss in "${rate_str_ss_lst[@]}"; do
+  echo "Running LFADS for $rate_str_ss"
+  python -m scripts.run_test -d "$rate_str_ss"
 done
 
 echo "Training complete!"
