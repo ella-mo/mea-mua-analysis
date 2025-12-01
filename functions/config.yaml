@@ -3,9 +3,9 @@ make_data:
   num_channels: 16
   batch_size: 32 # run LFADS batch
   fs: 50000
-  bin_size: 0.005  # seconds per bin
+  bin_size: 0.02  # seconds per bin
   sample_len: 12  # sample len in s
-  overlap: 2 # 2 second overlap when binning, included in sample_len
+  overlap: 2 # second overlap when binning, included in sample_len
   split_frac: 0.75 # train - test split
   DEBUG: False
   recording_duration: 900 # seconds (15 minutes)

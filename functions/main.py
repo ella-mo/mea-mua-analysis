@@ -20,8 +20,6 @@ except ImportError:
     sys.path.insert(0, str(Path(__file__).parent.parent))
     from functions.make_configs import create_datamodule_config, create_model_config
     from functions.bin_data import bin_make_train_val, readable_float
-    _project_root = Path(__file__).parent.parent.parent
-    from data_functions import stitch_data
     from process_data import extract_threshold_waveforms, calculate_threshold
     from making_names import make_dataset_str
 
@@ -58,16 +56,17 @@ if __name__ == '__main__':
         dataset_str = make_dataset_str(file, bin_size, sample_len, overlap)
         os.makedirs(f'{output_dir}/other_files', exist_ok=True)
         os.makedirs(f'{output_dir}/other_files/{dataset_str}', exist_ok=True)
+
         train_indices = f"{output_dir}/other_files/{dataset_str}/train_indices_{dataset_str}.npy"
         valid_indices = f"{output_dir}/other_files/{dataset_str}/valid_indices_{dataset_str}.npy"
-        mat_file = f"{output_dir}/other_files/{dataset_str}/{dataset_str}_raw_data.mat"
-                # Create datasets directory if it doesn't exist
+        raw_voltage_file = f"{output_dir}/other_files/{dataset_str}/{dataset_str}_raw_voltage.mat"
         data_file = f'{args.lfads_dir}/datasets/{dataset_str}.h5'
 
         # Load bin file
         data = np.memmap(file, dtype='float32', mode='r')
         data = data.reshape((num_channels, len(data)//num_channels), order='F').T #shape (num_samples, num_channels)
-        savemat(mat_file, {'data': data})
+        savemat(raw_voltage_file, {'data': data})
+        print('Saved raw data')
         print(f'data shape: {data.shape}')
 
         # Extract spike times for all channels
@@ -80,9 +79,15 @@ if __name__ == '__main__':
         
         print(f'Extracted spike times for {num_channels} channels')
 
-        train_data, valid_data, train_idx, valid_idx = bin_make_train_val(spike_times_per_channel, 
-            num_channels, recording_duration, sample_len, bin_size, 
-            overlap, split_frac, DEBUG)
+        train_data, valid_data, train_idx, valid_idx = bin_make_train_val(
+            spike_times_per_channel, 
+            num_channels, 
+            recording_duration, 
+            sample_len, 
+            bin_size, 
+            overlap, 
+            split_frac, 
+            DEBUG)
 
         # Save index lists for later reconstruction
         np.save(train_indices, train_idx)

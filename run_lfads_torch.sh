@@ -14,6 +14,7 @@
 # User paths (EDIT THESE)
 # ----------------------------
 LFADS_DIR=/oscar/data/slizarra/emohanra/finding_latent_rates_with_kilosort/lfads-torch
+CONFIG_PATH="$LFADS_DIR/functions/config.yaml"
 
 # ----------------------------
 # Setup
@@ -45,7 +46,7 @@ mkdir -p logs
 cd "$LFADS_DIR"
 
 # preprocess all bin files and build configs
-python -m functions.main -b bin_files.csv -l "$LFADS_DIR" -c functions/config.yaml
+python -m functions.main -b bin_files.csv -l "$LFADS_DIR" -c "$CONFIG_PATH"
 
 # grab the dataset IDs the Python step would have generated
 mapfile -t DATASETS < <(
@@ -54,7 +55,7 @@ import pandas as pd
 from pathlib import Path
 from functions.making_names import make_dataset_str
 import yaml
-with open("functions/config.yaml", "r") as f:
+with open("$CONFIG_PATH", "r") as f:
     config = yaml.safe_load(f)
 paths = pd.read_csv("bin_files.csv")["path"]
 for p in paths:

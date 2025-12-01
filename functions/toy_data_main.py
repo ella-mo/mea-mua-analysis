@@ -53,7 +53,7 @@ if __name__ == '__main__':
     start_sin_time = float(config['make_toy_data']['start_sin_time'])
     end_sin_time = float(config['make_toy_data']['end_sin_time'])
 
-    rate_str, rate_str_ss_lst = make_toy_datset_strs(args.config_path)
+    rate_str, rate_str_ss_lst = make_toy_dataset_strs(args.config_path)
     files_dir = lfads_dir / "files" / rate_str
     files_dir.mkdir(parents=True, exist_ok=True)
     
@@ -84,10 +84,9 @@ if __name__ == '__main__':
         
         sys.exit()
     
-    np.save(files_dir / f'{rate_str}_data.npy', 
-        {index: ch_times for index, ch_times in enumerate(spike_times_per_channel)},
-        allow_pickle=True)
-    print('Saved data in files/')
+    # savemat(files_dir / f'{rate_str}_.mat', 
+    #     {'data': {index: ch_times for index, ch_times in enumerate(spike_times_per_channel)}})
+    # print('Saved data in files/') idk 
 
     split_frac = float(config['make_toy_data']['split_frac'])
     batch_size = int(config['make_toy_data']['batch_size'])

@@ -262,4 +262,4 @@ def bin_make_train_val(spike_times_per_channel, num_channels, recording_duration
     train_data = binned_trials[train_idx]
     valid_data = binned_trials[valid_idx]
 
-    return train_data, valid_data, train_idx, valid_idx
+    return binned_trials, train_data, valid_data, train_idx, valid_idx
