@@ -1,5 +1,6 @@
 # TODO
 figure out better way of getting dataset_str between shell scripts and python files
+check 
 
 # `lfads-torch`: A modular and extensible implementation of latent factor analysis via dynamical systems
 

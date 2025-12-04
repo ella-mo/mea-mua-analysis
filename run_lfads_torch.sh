@@ -1,14 +1,10 @@
 #!/bin/bash
-#SBATCH --job-name=session_test
-#SBATCH --output=logs/session_test_%j.out
-#SBATCH --error=logs/session_test_%j.err
-#SBATCH -p gpu
-#SBATCH --gres=gpu:1
-#SBATCH --time=06:00:00
-#SBATCH --mem=10G
-#SBATCH --mail-type=ALL
-#SBATCH --mail-user=ella_mohanram@brown.edu
-
+#SBATCH --job-name=lfads_torch_session_test
+#SBATCH --output=logs/lfads_torch_session_test_%j.out
+#SBATCH --error=logs/lfads_torch_session_test_%j.err
+#SBATCH -p batch
+#SBATCH --time=00:30:00
+#SBATCH --mem=5G
 
 # ----------------------------
 # User paths (EDIT THESE)
@@ -40,13 +36,38 @@ mkdir -p logs
 # ----------------------------
 # Run LFADS single-session
 # ----------------------------
-#!/bin/bash
-# ... existing Slurm + conda setup ...
-
 cd "$LFADS_DIR"
 
 # preprocess all bin files and build configs
-python -m functions.main -b bin_files.csv -l "$LFADS_DIR" -c "$CONFIG_PATH"
+echo "=========================================="
+echo "Starting preprocessing of bin files..."
+echo "Reading bin files from: bin_files.csv"
+echo "Current directory: $(pwd)"
+echo "Verifying bin_files.csv exists:"
+if [ -f "bin_files.csv" ]; then
+    echo "  ✓ bin_files.csv found"
+    # Count non-empty lines after header (handles files without trailing newline)
+    FILE_COUNT=$(tail -n +2 bin_files.csv | grep -c . || echo "0")
+    echo "  Number of files to process: $FILE_COUNT"
+    echo "  Files:"
+    tail -n +2 bin_files.csv | while IFS= read -r line || [ -n "$line" ]; do
+        if [ -n "$line" ]; then
+            echo "    - $line"
+        fi
+    done
+else
+    echo "  ✗ ERROR: bin_files.csv not found!"
+    exit 1
+fi
+echo "=========================================="
+python -u -m functions.main -b bin_files.csv -l "$LFADS_DIR" -c "$CONFIG_PATH"
+if [ $? -ne 0 ]; then
+    echo "ERROR: Preprocessing failed with exit code $?"
+    exit 1
+fi
+echo "=========================================="
+echo "Preprocessing completed successfully"
+echo "=========================================="
 
 # grab the dataset IDs the Python step would have generated
 mapfile -t DATASETS < <(
@@ -68,8 +89,8 @@ PY
 # launch LFADS for each dataset
 for dataset in "${DATASETS[@]}"; do
   echo "Running LFADS for $dataset"
-  python -m scripts.run_test -d "$dataset"
+  sbatch -p gpu --gres=gpu:1 --time=06:00:00 --mem=10G \
+    --mail-type=ALL --mail-user=ella_mohanram@brown.edu \
+    -o "logs/${dataset}_%j.out" -e "logs/${dataset}_%j.err" \
+    --wrap "module load miniconda3/23.11.0s && eval \"\$(conda shell.bash hook)\" && conda activate lfads-torch && cd $LFADS_DIR && python -m scripts.run_test -d \"$dataset\""
 done
-
-echo "Training complete!"
-echo "Time: $(date)"
