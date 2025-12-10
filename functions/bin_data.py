@@ -240,6 +240,10 @@ def bin_make_train_val(spike_times_per_channel, num_channels, recording_duration
             bin_indices = np.clip(bin_indices, 0, n_timesteps - 1)
             np.add.at(binned_trials[i, :, ch], bin_indices, 1)
 
+        if DEBUG:
+            print(binned_trials.shape)
+            print(f'binned_trials for channel {ch}: {binned_trials[:, :, ch]}')
+
     validate_bin_data(binned_trials, spike_times_per_channel, num_channels, recording_duration, sample_len, bin_size, overlap)
 
     # Train-val split
@@ -262,4 +266,4 @@ def bin_make_train_val(spike_times_per_channel, num_channels, recording_duration
     train_data = binned_trials[train_idx]
     valid_data = binned_trials[valid_idx]
 
-    return binned_trials, train_data, valid_data, train_idx, valid_idx
+    return train_data, valid_data, train_idx, valid_idx

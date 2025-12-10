@@ -63,7 +63,7 @@ if __name__ == '__main__':
     for ch in range(n_channels):
         spike_times = inhomogeneous_poisson_sinusoidal(recording_duration, rate_f, max_rate)
         spike_times_per_channel.append(spike_times)
-        print(f'Channel {ch}: {len(spike_times)} spikes')
+        print(f'Channel {ch}: {spike_times}')
 
     # Plot the results
     if DEBUG:
@@ -82,7 +82,7 @@ if __name__ == '__main__':
             plt.grid(True, axis='y', linestyle='--', alpha=0.6)
             plt.show()
         
-        sys.exit()
+        # sys.exit()
     
     # savemat(files_dir / f'{rate_str}_.mat', 
     #     {'data': {index: ch_times for index, ch_times in enumerate(spike_times_per_channel)}})
@@ -102,6 +102,8 @@ if __name__ == '__main__':
 
         # sample_size is in bins, convert to seconds for sample_len
         sample_len = sample_size * bin_size
+        if DEBUG: 
+            print(f'sample_len {sample_len}')
         train_data, valid_data, train_idx, valid_idx = bin_make_train_val(
             spike_times_per_channel, 
             n_channels, 
@@ -112,6 +114,7 @@ if __name__ == '__main__':
             split_frac, 
             DEBUG
         )
+        continue
 
         # Save index lists for later reconstruction
         np.save(train_indices, train_idx)
