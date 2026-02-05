@@ -23,9 +23,10 @@ def make_dataset_str(bin_file, bin_size, sample_len, overlap):
         raise ValueError(f"Could not extract well from bin filename: {bin_name}")
     well = well_match.group(1)
     
-    # Extract day from grandparent directory (e.g., "20250509_NIN-B1_D80" or "20250410_NIN_B1_D51" -> "80" or "51")
+    # Extract day from grandparent directory (e.g., "20250509_NIN-B1_D80" or "20250410_NIN_B1_D51" or "20251206_indB2_d65" -> "80" or "51" or "65")
     grandparent_dir = bin_path.parent.parent.name
-    day_match = re.search(r'B1_D(\d+)', grandparent_dir)
+    # Match _d or _D followed by digits (case-insensitive, at end or before end)
+    day_match = re.search(r'_[dD](\d+)', grandparent_dir)
     if not day_match:
         raise ValueError(f"Could not extract day from grandparent directory: {grandparent_dir}")
     day = day_match.group(1)

@@ -17,7 +17,8 @@ BIN_FILES_CSV="bin_files.csv"
 # ----------------------------
 # Setup
 # ----------------------------
-module load miniconda3/23.11.0s
+module load miniforge3/25.3.0-3
+source ${MAMBA_ROOT_PREFIX}/etc/profile.d/conda.sh
 eval "$(conda shell.bash hook)"   
 conda activate lfads-torch
 
