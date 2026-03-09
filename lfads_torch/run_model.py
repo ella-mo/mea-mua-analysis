@@ -74,7 +74,7 @@ def run_model(
         )
         # Temporary workaround for PTL step-resuming bug
         if checkpoint_dir:
-            ckpt = torch.load(ckpt_path)
+            ckpt = torch.load(ckpt_path, weights_only=False)
             trainer.fit_loop.epoch_loop._batches_that_stepped = ckpt["global_step"]
         # Train the model
         trainer.fit(
@@ -85,11 +85,11 @@ def run_model(
         # Restore the best checkpoint if necessary - otherwise, use last checkpoint
         if config.posterior_sampling.use_best_ckpt:
             ckpt_path = trainer.checkpoint_callback.best_model_path
-            model.load_state_dict(torch.load(ckpt_path)["state_dict"])
+            model.load_state_dict(torch.load(ckpt_path, weights_only=False)["state_dict"])
     else:
         if checkpoint_dir:
             # If not training, restore model from the checkpoint
-            model.load_state_dict(torch.load(ckpt_path)["state_dict"])
+            model.load_state_dict(torch.load(ckpt_path, weights_only=False)["state_dict"])
 
     # Run the posterior sampling function
     if do_posterior_sample:

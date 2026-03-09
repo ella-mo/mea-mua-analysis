@@ -3,14 +3,14 @@
 #SBATCH --output=logs/lfads_torch_session_test_%j.out
 #SBATCH --error=logs/lfads_torch_session_test_%j.err
 #SBATCH -p batch
-#SBATCH --time=01:00:00
+#SBATCH --time=02:00:00
 #SBATCH --mem=5G
 
 # NOTE: this script can process and submit jobs for 7 bin files in one hour
 # ----------------------------
 # User paths (EDIT THESE)
 # ----------------------------
-LFADS_DIR=/oscar/data/slizarra/emohanra/finding_latent_rates_with_kilosort/lfads-torch
+LFADS_DIR=/oscar/home/emohanra/scratch/lizarraga/finding_latent_rates/mea-mua-analysis
 CONFIG_PATH="$LFADS_DIR/functions/config.yaml"
 BIN_FILES_CSV="bin_files.csv"
 
@@ -35,6 +35,7 @@ python -c "import hydra; print('Hydra version:', hydra.__version__)"
 
 
 mkdir -p logs
+mkdir -p logs/run_lfads
 
 # ----------------------------
 # Run LFADS single-session
@@ -103,12 +104,14 @@ for i in "${!FILE_PATHS[@]}"; do
     echo "Preprocessing $file_path completed successfully"
     echo "=========================================="
 
+    continue
+
     # launch LFADS for dataset
     echo "Running LFADS for $dataset_str"
-    sbatch -p gpu --gres=gpu:1 --time=08:00:00 --mem=10G \
-        --mail-type=ALL --mail-user=ella_mohanram@brown.edu \
-        -o "logs/${dataset_str}_%j.out" -e "logs/${dataset_str}_%j.err" \
-        --wrap "module load miniconda3/23.11.0s && eval \"\$(conda shell.bash hook)\" && conda activate lfads-torch && cd $LFADS_DIR && python -m scripts.run_test -d \"$dataset_str\""
+    sbatch -p gpu --gres=gpu:1 --time=08:00:00 --mem=10G --job-name=lfads_${dataset_str}_%j \
+    --mail-type=ALL --mail-user=ella_mohanram@brown.edu \
+    -o "logs/run_lfads/lfads_${dataset_str}_%j.out" -e "logs/run_lfads/lfads_${dataset_str}_%j.err" \
+    --wrap "module load miniforge3/25.3.0-3 && source ${MAMBA_ROOT_PREFIX}/etc/profile.d/conda.sh && eval \"\$(conda shell.bash hook)\" && conda activate lfads-torch && cd $LFADS_DIR && python -m scripts.run_test -d \"$dataset_str\""
     if [ $? -ne 0 ]; then
         echo "ERROR: LFADS failed with exit code $?"
         exit 1

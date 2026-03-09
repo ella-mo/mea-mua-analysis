@@ -12,7 +12,7 @@ except ImportError:
     from functions.bin_data import readable_float
 
 # REAL DATA
-def make_dataset_str(bin_file, bin_size, sample_len, overlap):
+def make_dataset_str(bin_file, bin_size=None, sample_len=None, overlap=None):
     """Extract day, recording number, and well from bin file path and name"""
     bin_path = Path(bin_file)
     bin_name = bin_path.name
@@ -37,7 +37,10 @@ def make_dataset_str(bin_file, bin_size, sample_len, overlap):
         raise ValueError(f"Could not extract recording number from bin filename: {bin_name}")
     recording = rec_match.group(1)
     
-    dataset_str = f'd{day}_r{recording}_w{well}_b{readable_float(bin_size)}_sl{readable_float(sample_len)}_o{readable_float(overlap)}'
+    if bin_size or sample_len or overlap is None:
+        dataset_str = f'd{day}_r{recording}_w{well}'
+    else:
+        dataset_str = f'd{day}_r{recording}_w{well}_b{readable_float(bin_size)}_sl{readable_float(sample_len)}_o{readable_float(overlap)}'
 
     return dataset_str
 

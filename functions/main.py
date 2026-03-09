@@ -56,7 +56,7 @@ if __name__ == '__main__':
 
     train_indices = f"{output_dir}/files/{dataset_str}/train_indices_{dataset_str}.npy"
     valid_indices = f"{output_dir}/files/{dataset_str}/valid_indices_{dataset_str}.npy"
-    raw_voltage_file = f"{output_dir}/files/{dataset_str}/{dataset_str}_raw_voltage.mat"
+    raw_voltage_mat_file = f"{output_dir}/files/{dataset_str}/{dataset_str}_raw_voltage.mat"
     data_file = f'{args.lfads_dir}/datasets/{dataset_str}.h5'
 
     # Load bin file
