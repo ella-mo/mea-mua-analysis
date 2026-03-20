@@ -6,6 +6,7 @@ import sys
 from scipy.io import savemat
 import pandas as pd
 import yaml
+import csv
 
 # Handle imports for both script execution and module import
 try:
@@ -57,6 +58,7 @@ if __name__ == '__main__':
     train_indices = f"{output_dir}/files/{dataset_str}/train_indices_{dataset_str}.npy"
     valid_indices = f"{output_dir}/files/{dataset_str}/valid_indices_{dataset_str}.npy"
     raw_voltage_mat_file = f"{output_dir}/files/{dataset_str}/{dataset_str}_raw_voltage.mat"
+    threshold_per_channel_file = f"{output_dir}/files/{dataset_str}/{dataset_str}_thresholds.csv"
     data_file = f'{args.lfads_dir}/datasets/{dataset_str}.h5'
 
     # Load bin file
@@ -65,14 +67,16 @@ if __name__ == '__main__':
     num_samples = num_elements // num_channels
     data = np.memmap(file, dtype='float32', mode='r', shape=(num_samples, num_channels))       #shape (num_samples, num_channels)
     print(f'data shape: {data.shape}')
-    savemat(raw_voltage_file, {'data': data})
+    savemat(raw_voltage_mat_file, {'data': data})
     print('Saved raw data')
 
     # Extract spike times for all channels
     spike_times_per_channel = []
+    threshold_per_channel = {}
     for ch in range(num_channels):
         x = data[:, ch]
         threshold = calculate_threshold(x)
+        threshold_per_channel[ch] = threshold
         spike_times = extract_threshold_waveforms(x, threshold, fs)
         spike_times_per_channel.append(spike_times)
     
@@ -82,6 +86,10 @@ if __name__ == '__main__':
         f"{output_dir}/files/{dataset_str}/spike_times.npy",
         np.array(spike_times_per_channel, dtype=object)
     )
+    with open(threshold_per_channel_file, 'w', newline="") as f:
+        writer = csv.DictWriter(f, threshold_per_channel.keys())
+        writer.writeheader()
+        writer.writerow(threshold_per_channel)
 
     train_data, valid_data, train_idx, valid_idx = bin_make_train_val(
         spike_times_per_channel, 
